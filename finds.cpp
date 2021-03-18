@@ -1,6 +1,5 @@
 #include<filesystem>
 #include<iostream>
-#include<iomanip>
 #include<string>
 #include<string.h>
 #include<fstream>
@@ -85,35 +84,39 @@ int main(int argc, char ** argv)
     return 0;
   }
 
-  fs::path p(argv[2]);
   unsigned long long occurances = 0;
 
-  if(fs::is_directory(p))
-    occurances = find_recursive(p, argv[1]);
-  else
+  for(int j = 2; j < argc; j++)
   {
-    std::ifstream file(argv[2]);
+    fs::path p(argv[j]);
 
-    if(file.is_open())
+    if(fs::is_directory(p))
     {
-      unsigned long long i = 1;
-      std::string line;
-      while(getline(file, line))
-      {
-        if(line.find(argv[1]) != std::string::npos)
-        {
-          printf("Found \"%s\" at %s line %llu\n", argv[1], argv[2],  i);
-          g_found = true;
-        }
-
-        i++;
-      }
-      file.close();
+      occurances += find_recursive(p, argv[1]);
     }
     else
     {
-      printf("Unable to open file %s.\n", argv[2]);
-      return 0;
+      std::ifstream file(argv[2]);
+
+      if(file.is_open())
+      {
+        unsigned long long i = 1;
+        std::string line;
+        while(getline(file, line))
+        {
+          if(line.find(argv[1]) != std::string::npos)
+          {
+            printf("Found \"%s\" at %s line %llu\n", argv[1], argv[j],  i);
+            g_found = true;
+          }
+          i++;
+        }
+        file.close();
+      }
+      else
+      {
+        printf("Unable to open file %s.\n", argv[j]);
+      }
     }
   }
 
