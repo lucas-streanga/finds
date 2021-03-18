@@ -36,6 +36,8 @@ unsigned long long find_recursive(const fs::path& path, const std::string & s)
           if (fs::exists(p) && !fs::is_directory(p) &&fs::is_regular_file(p))
           {
             //Try to find the string
+            //if((fs::status(p).permissions() & fs::perms::owner_exec) != fs::perms::none)
+            //  continue;
             std::ifstream file(pa.c_str());
 
             if(file.is_open())
