@@ -4,7 +4,7 @@ Finds is a command line utility to find strings across files or directories.
 # Usage
 The first command line parameter is the string to find. It may be mutliple words if enclosed in "". The rest
 of the command line arguments are paths to search.
-***finds "string" path1 path2 ***
+***finds string path1 path2***
 
 The output will be the line numbers in which the string occurs and in which file it occurs, along with the total
 occurances. 
