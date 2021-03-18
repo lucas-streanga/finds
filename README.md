@@ -37,3 +37,7 @@ Found 21 occurances.
 
 ## Notes
 Non-regular files are skipped, such a block devices, pipes, etc. Executable files are not skipped, as scripts may need to be parsed. This may lead to false positives in some file types like imagaes or binary executables. 
+
+## Compilation
+Running ```make``` will compile the program. ```make install``` will install the utility to the default installation path, /usr/local/bin. The
+install path may be changed by editing the INSTALL_PATH variable, like this: ```sudo make install INSTALL_PATH=~/my_programs```
