@@ -11,13 +11,23 @@
 #define LOG(x)
 #endif
 
+#define MAX_RETRY 20
+
 namespace fs = std::filesystem;
 
 bool g_found;
+unsigned int g_tries;
 
 unsigned long long find_recursive(const fs::path& path, const std::string & s)
 {
+    g_tries++;
+    if(g_tries > MAX_RETRY)
+    {
+      printf("Max retries (%u) reached at directory %s\n", MAX_RETRY, path.c_str());
+      return 0;
+    }
     fs::path pa;
+    fs::path cur_directory;
     unsigned long long occurances = 0;
     try
     {
@@ -25,48 +35,56 @@ unsigned long long find_recursive(const fs::path& path, const std::string & s)
       {
           pa = p.path();
           LOG("Scanning " << pa);
-          //Proc is unreadable, and so is /var/cache/fwupdmgr
-          if(!strncmp(pa.c_str(), "/proc/", 5) || !strncmp(pa.c_str(), "/var/cache/fwupdmgr", 19))
-          {
-            //We need to skip these before trying to access any info bc we will get
-            //permission denied and iteration will end
-            LOG("SKIPPED: Encountered " << pa << " which is unreadable.");
-            continue;
-          }
-          if (fs::exists(p) && !fs::is_directory(p) &&fs::is_regular_file(p))
-          {
-            //Try to find the string
-            //if((fs::status(p).permissions() & fs::perms::owner_exec) != fs::perms::none)
-            //  continue;
-            std::ifstream file(pa.c_str());
 
-            if(file.is_open())
+          try
+          {
+            if(fs::is_directory(p))
             {
-              unsigned long long i = 1;
-              std::string line;
-              while(getline(file, line))
-              {
-                if(line.find(s) != std::string::npos)
-                {
-                  printf("Found \"%s\" at %s line %llu\n", s.c_str(), pa.c_str(),  i);
-                  occurances++;
-                  g_found = true;
-                }
-
-                i++;
-              }
-              file.close();
+              cur_directory = pa;
+              continue;
             }
-          }
-          else
-          {
-            LOG("Skipped " << pa << " (either a directory or unopenable)");
-          }
+
+            if (fs::exists(p) && fs::is_regular_file(p))
+            {
+              //Try to find the string
+              //if((fs::status(p).permissions() & fs::perms::owner_exec) != fs::perms::none)
+              //  continue;
+              std::ifstream file(pa.c_str());
+
+              if(file.is_open())
+              {
+                unsigned long long i = 1;
+                std::string line;
+                while(getline(file, line))
+                {
+                  if(line.find(s) != std::string::npos)
+                  {
+                    printf("Found \"%s\" at %s line %llu\n", s.c_str(), pa.c_str(),  i);
+                    occurances++;
+                    g_found = true;
+                  }
+
+                  i++;
+                }
+                file.close();
+              }
+            }
+            else
+            {
+              LOG("Skipped " << pa << " (either a directory or unopenable)");
+            }
         }
+        catch(fs::filesystem_error &e)
+        {
+            LOG("Skipped " << pa << " (either a directory or unopenable)");
+        }
+      }
     }
     catch(fs::filesystem_error& e)
     {
       std::cout << "Unable to access file or path " << pa <<": " << e.what() << "\n";
+      //try again from the current directory
+      occurances += find_recursive(cur_directory, s);
     }
     catch(std::bad_alloc&)
     {
@@ -79,6 +97,7 @@ unsigned long long find_recursive(const fs::path& path, const std::string & s)
 int main(int argc, char ** argv)
 {
   g_found = false;
+  g_tries = 0;
 
   if(argc < 3)
   {
